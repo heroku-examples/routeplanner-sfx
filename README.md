@@ -68,3 +68,17 @@ Delivery Plan @ 2019-02-09 15:43:09.845  R-00000001             Van             
 ```
 
 ## Local Development
+
+On a terminal run the following:
+
+```
+cd functions/routeplanner
+sfdx run:function:start
+```
+
+On another terminal run the following:
+
+```
+cd functions/routeplanner
+sfdx run:function --url=http://localhost:8080 -p=@data/sample-payload.json
+```
