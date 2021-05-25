@@ -39,7 +39,7 @@ public with sharing class DeliveryRouteController {
         Number__c
       FROM DeliveryWaypoint__c
       ORDER BY CreatedDate DESC
-      LIMIT 4
+      LIMIT 5
     ];
   }
 }

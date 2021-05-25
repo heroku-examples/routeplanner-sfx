@@ -27,9 +27,11 @@ import com.salesforce.functions.jvm.sdk.data.RecordModificationResult;
 import com.salesforce.functions.jvm.sdk.data.RecordQueryResult;
 import com.salesforce.functions.jvm.sdk.data.ReferenceId;
 import com.salesforce.functions.jvm.sdk.data.builder.UnitOfWorkBuilder;
+import com.salesforce.functions.jvm.sdk.data.error.DataApiException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +44,25 @@ public class RoutePlannerFunction implements SalesforceFunction<FunctionInput, F
   public FunctionOutput apply(InvocationEvent<FunctionInput> event, Context context)
       throws Exception {
 
+    String accountName = event.getData().getAccountName();
     DataApi dataApi = context.getOrg().get().getDataApi();
+
+    LOGGER.info("Calculating delivery routes for Account: {}", accountName);
+
+    // Query for Account
+    List<Record> accountResults =
+        dataApi
+            .query(String.format("SELECT Id FROM Account WHERE Name = '%s'", accountName))
+            .getRecords();
+
+    if (accountResults.size() == 0) {
+      throw new DataApiException("No account fount");
+    }
+
+    // Get Account
+    Record account = accountResults.get(0);
+
+    // Build an Unit Of Work
     UnitOfWorkBuilder unitOfWork = dataApi.newUnitOfWorkBuilder();
 
     try {
@@ -68,7 +88,11 @@ public class RoutePlannerFunction implements SalesforceFunction<FunctionInput, F
 
       // Query Services using the Data API
       RecordQueryResult services =
-          dataApi.query("SELECT Id, Name, LocationX__c, LocationY__c FROM Service__c");
+          dataApi.query(
+              String.format(
+                  "SELECT Id, Name, LocationX__c, LocationY__c FROM Service__c WHERE Account__c ="
+                      + " '%s'",
+                  account.getStringField("Id").get()));
       for (Record record : services.getRecords()) {
         String id = record.getStringField("Id").get();
         Double locationX = record.getDoubleField("LocationX__c").get();
