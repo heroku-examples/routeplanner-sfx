@@ -34,7 +34,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Describe RoutePlannerFunction here. */
+/** Receives an account and calculates the best delivery route for different provided services */
 public class RoutePlannerFunction implements SalesforceFunction<FunctionInput, FunctionOutput> {
   private static final Logger LOGGER = LoggerFactory.getLogger(RoutePlannerFunction.class);
 
@@ -49,7 +49,7 @@ public class RoutePlannerFunction implements SalesforceFunction<FunctionInput, F
       // Build the VRP (Vehicle Routing Problem) by querying Vehicles and Services to provide
       VehicleRoutingProblem.Builder vrpBuilder = VehicleRoutingProblem.Builder.newInstance();
 
-      // Vehicles
+      // Query Vehicles using the Data API
       RecordQueryResult vehicles =
           dataApi.query("SELECT Id, Name, LocationX__c, LocationY__c FROM Vehicle__c");
       for (Record record : vehicles.getRecords()) {
@@ -66,19 +66,19 @@ public class RoutePlannerFunction implements SalesforceFunction<FunctionInput, F
         vrpBuilder.addVehicle(vehicle);
       }
 
-      // Services
+      // Query Services using the Data API
       RecordQueryResult services =
           dataApi.query("SELECT Id, Name, LocationX__c, LocationY__c FROM Service__c");
       for (Record record : services.getRecords()) {
         String id = record.getStringField("Id").get();
         Double locationX = record.getDoubleField("LocationX__c").get();
         Double locationY = record.getDoubleField("LocationY__c").get();
-        Service service1 =
+        Service service =
             Service.Builder.newInstance(id)
                 .addSizeDimension(0, 1)
                 .setLocation(Location.newInstance(locationX, locationY))
                 .build();
-        vrpBuilder.addJob(service1);
+        vrpBuilder.addJob(service);
       }
 
       VehicleRoutingProblem vrp = vrpBuilder.build();
@@ -95,7 +95,7 @@ public class RoutePlannerFunction implements SalesforceFunction<FunctionInput, F
       Collection<VehicleRoutingProblemSolution> solutions = vra.searchSolutions();
       VehicleRoutingProblemSolution solution = new SelectBest().selectSolution(solutions);
 
-      // Store the delivery plan using the Unit Of Work
+      // Store the delivery plan using the Unit Of Work pattern
       Record deliveryPlan =
           dataApi
               .newRecordBuilder("DeliveryPlan__c")
@@ -107,6 +107,7 @@ public class RoutePlannerFunction implements SalesforceFunction<FunctionInput, F
               .build();
       ReferenceId deliveryPlanResult = unitOfWork.registerCreate(deliveryPlan);
 
+      // Store the delivery routes using the Unit Of Work pattern
       for (VehicleRoute route : solution.getRoutes()) {
         Record deliveryRoute =
             dataApi
@@ -114,8 +115,9 @@ public class RoutePlannerFunction implements SalesforceFunction<FunctionInput, F
                 .withField("Vehicle__c", route.getVehicle().getId())
                 .withField("DeliveryPlan__c", deliveryPlanResult)
                 .build();
-
         ReferenceId deliveryRouteResult = unitOfWork.registerCreate(deliveryRoute);
+
+        // Store the delivery waypoints using the Unit Of Work pattern
         for (TourActivity activity : route.getActivities()) {
           Record deliveryWaypoint =
               dataApi
@@ -128,7 +130,7 @@ public class RoutePlannerFunction implements SalesforceFunction<FunctionInput, F
         }
       }
 
-      // Commit Unit Of Work
+      // Commit Unit Of Work as a single transaction
       Map<ReferenceId, RecordModificationResult> result =
           dataApi.commitUnitOfWork(unitOfWork.build());
 
