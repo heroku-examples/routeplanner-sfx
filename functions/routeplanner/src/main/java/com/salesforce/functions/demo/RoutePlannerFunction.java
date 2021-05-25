@@ -56,7 +56,7 @@ public class RoutePlannerFunction implements SalesforceFunction<FunctionInput, F
             .getRecords();
 
     if (accountResults.size() == 0) {
-      throw new DataApiException("No account fount");
+      throw new DataApiException("No account found");
     }
 
     // Get Account
