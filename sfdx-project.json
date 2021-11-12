@@ -5,8 +5,8 @@
       "default": true
     }
   ],
-  "name": "routeplannertdx",
+  "name": "routeplannerdemo",
   "namespace": "",
   "sfdcLoginUrl": "https://login.salesforce.com",
-  "sourceApiVersion": "51.0"
+  "sourceApiVersion": "53.0"
 }

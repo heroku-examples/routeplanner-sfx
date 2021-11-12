@@ -1,10 +1,10 @@
-# Lightning Function Demos
+# Route Planner Demo
 
 ## Node.js + Platform Events
 
-This demo uses a combination of Flow, Evergreen Functions, CDC, and Lightning Web Components.
+This demo uses a combination of Flow, Salesforce Functions, CDC, and Lightning Web Components.
 
-Rough demo flow:
+Demo flow:
 
 - Open account record
 - Click Quick Action "New Delivery"
@@ -13,7 +13,9 @@ Rough demo flow:
 
 ### Salesforce org setup
 
-1. Create scratch org.
+This demo uses Salesforce Functions local development environment integrated with a scratch org, you can use a Developer Edition Org.
+
+1. Create a scratch org.
 
 ```zsh
 sfdx force:org:create -s -f config/project-scratch-def.json -a routeplannerdemo
@@ -49,7 +51,7 @@ sfdx force:org:open
 
 As the DX is in flux this section only describes the minimum needed information.
 
-- The function for this demo is located in `functions/RoutePlanner`.
+- The function for this demo is located in `functions/routeplanner`.
 - The permissionset to use is `RoutePlanner` - for function assignment _and_ for the Platform Event assignment.
 
 ## Route Planner Function
@@ -73,12 +75,12 @@ On a terminal run the following:
 
 ```
 cd functions/routeplanner
-sfdx run:function:start
+sf run function start
 ```
 
 On another terminal run the following:
 
 ```
 cd functions/routeplanner
-sfdx run:function --url=http://localhost:8080 -p=@data/sample-payload.json
+sf run function -l http://localhost:8080 -p=@data/sample-payload.json
 ```
